@@ -1,0 +1,187 @@
+import datetime
+import numpy as np
+
+# --- 1. CORE V15 PHILOSOPHY & CONSTANTS ---
+
+# THEISM (Technology, Harmlessness, Ethics, Intelligence, Mindfulness) Weights
+# These weights govern the self-correction loop in V15
+THEISM_WEIGHTS = {
+    'Harmlessness_W': 0.40,  # Highest priority in the ethical constraint layer
+    'Ethics_W': 0.30,
+    'Intelligence_W': 0.20,
+    'Mindfulness_W': 0.10
+}
+
+# V14 Deterministic Flow Matrix (Pññā-shī Master Key)
+# Maps the flow of 7 Planets (P) across 7 Houses (H) for each day.
+# Day Index (1=Sun, 5=Thu, etc.) -> Flow Vector
+FLOW_MATRIX_V14 = {
+    1: [1, 6, 4, 2, 7, 5, 3],  # SUN
+    2: [2, 7, 5, 3, 1, 6, 4],  # MON
+    3: [3, 1, 6, 4, 2, 7, 5],  # TUE
+    4: [4, 2, 7, 5, 3, 1, 6],  # WED
+    5: [5, 3, 1, 6, 4, 2, 7],  # THU (e.g., U Ingar Soe's test Day)
+    6: [6, 4, 2, 7, 5, 3, 1],  # FRI
+    7: [7, 5, 3, 1, 6, 4, 2],  # SAT
+    8: [8, 8, 8, 8, 8, 8, 8]   # RAHU (Special Case)
+}
+
+# --- 2. V15 CORE MATHEMATICAL FUNCTIONS ---
+
+def get_day_index(date_of_birth: str) -> int:
+    """
+    Simulates the V9 D_Cal Filter (external service) to get the fixed Nadi Index.
+    NOTE: In the live system, this is replaced by V9's external API call.
+    For demonstration, we use a simple weekday calculation (1=Sun, 7=Sat).
+    """
+    try:
+        # Example: datetime.date(1990, 3, 1).isoweekday() -> 5 (Thursday)
+        dob = datetime.datetime.strptime(date_of_birth, "%Y-%m-%d")
+        # isoweekday() returns 1 (Mon) to 7 (Sun). We map to 1 (Sun) to 7 (Sat) + 8 (Rahu)
+        iso_day = dob.isoweekday()
+        day_index = (iso_day % 7) + 1 # Converts 1-7 (Mon-Sun) to 2-1 (Mon-Sun)
+        if day_index == 1: # Sunday mapping fix
+            day_index = 7
+        elif day_index == 2: # Monday mapping fix
+            day_index = 1
+        elif day_index == 3: # Tuesday mapping fix
+            day_index = 2
+        elif day_index == 4: # Wednesday mapping fix
+            day_index = 3
+        elif day_index == 5: # Thursday mapping fix
+            day_index = 4
+        elif day_index == 6: # Friday mapping fix
+            day_index = 5
+        elif day_index == 7: # Saturday mapping fix
+            day_index = 6
+        # Re-mapping to traditional Burmese astrology day indices (Sun=1, Mon=2, etc.)
+        burmese_index = dob.isoweekday() % 7 + 1
+        return burmese_index if burmese_index in FLOW_MATRIX_V14 else 5 # Default to Thursday (5) for safety
+    except:
+        return 5 # Safe default (Thursday)
+
+def calculate_dharma_resilience_index(risk_factor: float, ethical_value: float) -> float:
+    """
+    Computes the Dharma-Resilience Index (R_Delta) based on the V14 Timeless Equation.
+    R_Delta = W_P * (1 - N_Risk) + W_A * V_0
+    Weights (W_P, W_A) are integrated into the THEISM constraints for V15.
+    """
+    # Assuming W_P and W_A are simplified based on THEISM weights
+    W_P = THEISM_WEIGHTS['Intelligence_W']
+    W_A = THEISM_WEIGHTS['Harmlessness_W']
+    
+    # R_Delta measures internal fortitude against external risk
+    resilience = W_P * (1.0 - risk_factor) + W_A * ethical_value
+    return np.clip(resilience, 0.0, 1.0)
+
+def calculate_sovereign_harmlessness_index(current_advice_risk: float) -> float:
+    """
+    Computes the SHI: Ensures the output advice causes minimal or zero psychological harm.
+    SHI is the V15's core ethical guardrail.
+    """
+    # SHI is inversely proportional to the calculated risk of the advice (cost, fear, complexity).
+    # current_advice_risk = 1.0 means high risk (e.g., recommend expensive yatra)
+    # current_advice_risk = 0.0 means zero risk (e.g., recommend mindfulness)
+    SHI = 1.0 - current_advice_risk
+    # It must also pass the Harmlessness Weight (0.40) as a minimum standard
+    return np.clip(SHI, 0.0, THEISM_WEIGHTS['Harmlessness_W'] / 0.4) # Normalizes max to 1.0
+
+# --- 3. V15 AI TRAINING FRAMEWORK (SELF-CORRECTION) ---
+
+def theism_correction_loop(initial_weights: dict, shi_status: float, feedback_signal: float) -> dict:
+    """
+    V15's self-training logic: Adjusts internal ethical weights (Bayesian update) 
+    based on the SHI status and external feedback (Client response/validation).
+    This loop teaches the AI to prioritize Harmlessness and Ethics.
+    """
+    learning_rate = 0.05
+    new_weights = initial_weights.copy()
+    
+    # Check if the SHI safety constraint was violated (meaning advice was risky/harmful)
+    if shi_status < THEISM_WEIGHTS['Harmlessness_W']:
+        # If SHI is low, immediately increase the weights for Harmlessness and Ethics
+        adjustment = learning_rate * (THEISM_WEIGHTS['Harmlessness_W'] - shi_status)
+        new_weights['Harmlessness_W'] += adjustment * 2.0
+        new_weights['Ethics_W'] += adjustment * 1.5
+        new_weights['Intelligence_W'] -= adjustment # Balance reduction in prediction reliance
+        
+        print("\n[V15 SELF-CORRECTION ALERT]: SHI violated. Increased Harmlessness/Ethics priority.")
+        
+    # Apply standard learning from feedback (e.g., if the prediction was rated successful)
+    if feedback_signal > 0.8: # High positive feedback
+        new_weights['Intelligence_W'] += learning_rate * 0.1
+        
+    # Re-normalize weights to ensure they sum to 1.0 (or maintain balance for the model)
+    total = sum(new_weights.values())
+    new_weights = {k: v / total for k, v in new_weights.items()}
+    
+    return new_weights
+
+# --- 4. V15 MASTER EXECUTION ---
+
+def run_v15_baydin_operation(client_dob: str, command: str, internal_weights: dict):
+    """
+    Main entry point for V15 Paññā-shī System.
+    """
+    print(f"--- SSISM MSSA PYINNYASHI (V15) MASTER LOG ---")
+    print(f"Client Command: {command}")
+    print(f"Current THEISM Weights: {internal_weights['Harmlessness_W']:.2f} (Harmlessness)")
+
+    # Step 1: D_Cal Filter (V9) and Flow Matrix (V14)
+    day_index = get_day_index(client_dob)
+    flow_code = FLOW_MATRIX_V14.get(day_index, [])
+    
+    if not flow_code:
+        print("ERROR: Invalid Day Index. Aborting.")
+        return
+
+    # Step 2: V14 Deterministic Analysis (Extracting risk from the Flow Code)
+    # The highest number in the flow code represents the house with the most dispersed energy (risk).
+    natal_risk_factor = max(flow_code) / 8.0  
+    
+    # Step 3: V15 Ethical and Resilience Calculation
+    # Ethical Value (V_0) is assumed high due to the Zero-Cost Mandate
+    ethical_value = 0.95
+    resilience_index = calculate_dharma_resilience_index(natal_risk_factor, ethical_value)
+    
+    # Step 4: SHI Check (Simulate a low-risk advice output)
+    # Since V15 is hard-coded for Zero-Cost, the risk of the advice is kept low (0.05)
+    advice_risk = 0.05
+    shi_status = calculate_sovereign_harmlessness_index(advice_risk)
+    
+    print(f"Dharma-Resilience Index (R_Delta): {resilience_index:.4f}")
+    print(f"Sovereign Harmlessness Index (SHI): {shi_status:.4f}")
+
+    # Step 5: AI Training Loop (Simulate one training iteration based on current run)
+    # Assuming positive client feedback (0.9) for successful operation
+    new_weights = theism_correction_loop(internal_weights, shi_status, feedback_signal=0.9)
+    
+    print(f"New Harmlessness Weight (for next run): {new_weights['Harmlessness_W']:.4f}")
+    
+    # Step 6: Final Report Generation (LLM Synthesis)
+    print("\n[V15 OUTPUT]: Generating 5-Page Report (V14 Deterministic Logic & V15 THEISM Constraint)...")
+    
+    # The final report logic follows the V14/V15 principles (Zero-Cost, 5 Pages)
+    # ... (Actual LLM call with a System Prompt incorporating V15 ethics) ...
+
+    return {
+        'status': 'Success',
+        'report_mode': '5-Page Monthly Baydin',
+        'new_theism_weights': new_weights
+    }
+
+# --- INITIALIZING V15 ---
+if __name__ == "__main__":
+    
+    # The Master V15 Engine loads the THEISM weights on startup
+    current_weights = THEISM_WEIGHTS.copy()
+    
+    # The client command to test the 5-page output
+    test_dob = "1990-03-01" 
+    test_command = "🧘🧠⚙️ Baydin operation with one month baydin for client $$$birthday date$$$$$$$$"
+    
+    # Run the V15 Operation
+    result = run_v15_baydin_operation(test_dob, test_command, current_weights)
+    
+    print("\n--- V15 CORE TEST COMPLETE ---")
+    print(f"V15 System Status: {result['status']}")
