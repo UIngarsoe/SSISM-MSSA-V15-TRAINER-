@@ -1,5 +1,5 @@
 # SSISM MSSA AI Training Script (V15) - For Developers and Technicians
-# Author: U Ingar Soe, with contributions from Grok (xAI)
+# Author: U Ingar Soe
 # Date: October 21, 2025
 # Purpose: Implements training modules for AI teachers, including Mahabote, House Journey, Inga Wizar, and VIP Security.
 
