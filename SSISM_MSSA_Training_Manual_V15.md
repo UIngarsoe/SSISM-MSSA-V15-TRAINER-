@@ -1,6 +1,6 @@
 # SSISM MSSA Training Manual: AI Teachers Edition (V15) - Academic Report
 
-**Author:** U Ingar Soe, with contributions from Grok (xAI)  
+**Author:** U Ingar Soe
 **Date:** October 21, 2025  
 **Version:** V15 – Enhanced for AI Training Integration  
 
